@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Lab: Rekayasa Genetika Bakteri Insulin</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-dark: #1b5e20;
+            --accent: #4caf50;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #cbd5e1;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 900px;
+            background: var(--card);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 16px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            width: 100%;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 16.6%;
+            transition: width 0.3s ease;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .screen.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h2 { font-size: 1.3rem; color: var(--primary-dark); margin-bottom: 12px; }
+        h3 { font-size: 1.1rem; margin-bottom: 10px; color: #334155; }
+        p, li { font-size: 0.95rem; line-height: 1.5; color: var(--text); margin-bottom: 10px; }
+        .instruction-box {
+            background: #f1f8f6;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:hover { background: var(--primary-dark); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        
+        .identity-card {
+            background: #e8f5e9;
+            border: 1px dashed var(--primary);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+
+        .rack {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .item-card {
+            background: #f8fafc;
+            border: 2px solid var(--border);
+            padding: 10px 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .item-card:hover { border-color: var(--primary); background: #f1f8f6; }
+        .item-card.selected { background: #e8f5e9; border-color: var(--primary); color: var(--primary-dark); }
+        
+        .slots-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .slot {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            background: #fff;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .slot.filled {
+            border-style: solid;
+            border-color: var(--primary);
+            background: #f1f8f6;
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+        .feedback {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .feedback.error { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; display: block; }
+        .feedback.success { background: #f0fdf4; color: #166534; border: 1px solid #86efac; display: block; }
+
+        .lab-animation-box {
+            text-align: center;
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @keyframes rotatePlasmid {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .rotating-dna {
+            animation: rotatePlasmid 4s linear infinite;
+            transform-origin: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: center;
+        }
+        th { background: #f1f5f9; }
+        textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>Virtual Lab: Bakteri Penghasil Insulin</header>
+    <div class="progress-bar"><div class="progress-fill" id="p-fill"></div></div>
+    <div class="content">
+        
+        <!-- S1: ORIENTASI & IDENTITAS KELOMPOK -->
+        <div id="screen-1" class="screen active">
+            <h2>Simulasi Rekayasa Genetika</h2>
+            <div class="identity-card">
+                <strong>Kelompok 3 (PSPB 23 D) - UNIMED:</strong><br>
+                • Beatrix Octaviana Silitonga (4233141016)<br>
+                • Dicky Ray’za Sianturi<br>
+                • Jennya Theresia Br Tarigan<br>
+                • Joevina Emmiya Br Ginting<br>
+                • Orissa Paskah Syaloom Napitupulu
+            </div>
+            <div class="instruction-box">
+                <p><strong>Kasus Nyata:</strong> Penderita diabetes membutuhkan insulin. Melalui teknik DNA rekombinan, gen insulin disisipkan ke bakteri <i>E. coli</i> [cite: 1].</p>
+            </div>
+            <button class="btn" onclick="playSound('click'); goToScreen(2)">Mulai Praktikum &rarr;</button>
+        </div>
+
+        <!-- S2: PERSIAPAN ALAT & BAHAN -->
+        <div id="screen-2" class="screen">
+            <h2>Langkah 1: Persiapan Alat & Bahan</h2>
+            <div class="instruction-box">
+                Pilih 4 komponen utama yang benar untuk merancang percobaan. Waspada bahan pengecoh!
+            </div>
+            <div class="rack" id="rack-items">
+                <div class="item-card" onclick="playSound('pop'); selectItem(this, 'insulin')">Gen Insulin</div>
+                <div class="item-card" onclick="playSound('pop'); selectItem(this, 'plasmid')">Plasmid Vektor</div>
+                <div class="item-card" onclick="playSound('pop'); selectItem(this, 'enzim')">Enzim Restriksi</div>
+                <div class="item-card" onclick="playSound('pop'); selectItem(this, 'ligase')">DNA Ligase</div>
+                <div class="item-card" onclick="playSound('pop'); selectItem(this, 'amilase')">Amilase (Pengecoh)</div>
+                <div class="item-card" onclick="playSound('pop'); selectItem(this, 'bakteri')">Biakan E. coli</div>
+            </div>
+            <h3>Meja Kerja (<span id="slot-count">0</span>/4 komponen)</h3>
+            <div class="slots-container" id="slots-view">
+                <div class="slot">Slot 1 Kosong</div>
+                <div class="slot">Slot 2 Kosong</div>
+                <div class="slot">Slot 3 Kosong</div>
+                <div class="slot">Slot 4 Kosong</div>
+            </div>
+            <div id="s2-feedback" class="feedback"></div>
+            <button class="btn" id="btn-s2" onclick="playSound('click'); goToScreen(3)" disabled>Lanjut ke Pemotongan DNA</button>
+        </div>
+
+        <!-- S3: PEMOTONGAN & PENYAMBUNGAN DENGAN ANIMASI -->
+        <div id="screen-3" class="screen">
+            <h2>Langkah 2: Pemotongan & Penyambungan</h2>
+            <div class="instruction-box">
+                Pilih enzim restriksi yang tepat agar ujung lengket DNA cocok [cite: 1].
+            </div>
+            
+            <div class="lab-animation-box">
+                <svg width="120" height="120" viewBox="0 0 100 100" class="rotating-dna">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#4caf50" stroke-width="8" stroke-dasharray="20 10"/>
+                    <circle cx="50" cy="50" r="25" fill="none" stroke="#38bdf8" stroke-width="6"/>
+                    <text x="32" y="55" fill="white" font-size="10">DNA</text>
+                </svg>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn" style="margin-top:0; background:#475569;" onclick="testEnzyme('EcoRI')">Gunakan EcoRI</button>
+                <button class="btn" style="margin-top:0; background:#475569;" onclick="testEnzyme('HindIII')">Gunakan Enzim Beda</button>
+            </div>
+            <div id="s3-feedback" class="feedback"></div>
+            <div id="s3-action" style="display:none; margin-top: 15px;">
+                <p style="color:var(--primary-dark); font-weight:600;">✓ Ujung DNA cocok! Ligase merekatkan plasmid.</p>
+                <button class="btn" onclick="playSound('click'); goToScreen(4)">Lanjut ke Transformasi</button>
+            </div>
+        </div>
+
+        <!-- S4: TRANSFORMASI & INOKULASI -->
+        <div id="screen-4" class="screen">
+            <h2>Langkah 3: Transformasi & Inokulasi</h2>
+            <div class="instruction-box">
+                Masukkan plasmid ke sel bakteri dengan <i>Heat shock 42°C</i> [cite: 1].
+            </div>
+            <button class="btn" onclick="playSound('success'); runTransformation()">Jalankan Heat Shock (16 Jam)</button>
+            <div id="s4-result" style="display:none; margin-top: 15px;">
+                <p style="color:var(--primary-dark); font-weight:600;">✓ Inkubasi Selesai! Koloni bakteri terbentuk.</p>
+                <button class="btn" onclick="playSound('click'); goToScreen(5)">Lihat Hasil Observasi</button>
+            </div>
+        </div>
+
+        <!-- S5: OBSERVASI & ANALISIS -->
+        <div id="screen-5" class="screen">
+            <h2>Langkah 4: Observasi & Analisis</h2>
+            <table>
+                <tr><th>Cawan</th><th>Bakteri</th><th>Media</th><th>Koloni</th></tr>
+                <tr><td>A</td><td>Tanpa Plasmid</td><td>LB</td><td>&gt;300 [cite: 1]</td></tr>
+                <tr><td>B</td><td>Tanpa Plasmid</td><td>LB + Amp</td><td>0 [cite: 1]</td></tr>
+                <tr><td>C</td><td>Transformasi</td><td>LB + Amp</td><td>35–65 [cite: 1]</td></tr>
+                <tr><td>D</td><td>Transformasi</td><td>LB</td><td>&gt;300 [cite: 1]</td></tr>
+            </table>
+            <p style="margin-top: 15px;"><strong>Pertanyaan:</strong> Mengapa Cawan B tidak ditumbuhi koloni [cite: 1]?</p>
+            <textarea rows="3" placeholder="Tulis analisis Anda..."></textarea>
+            <button class="btn" onclick="playSound('click'); goToScreen(6)">Selesai & Simpan</button>
+        </div>
+
+        <!-- S6: KESIMPULAN -->
+        <div id="screen-6" class="screen">
+            <h2>Langkah 5: Kesimpulan Praktikum</h2>
+            <div class="instruction-box">
+                <p><strong>Selamat!</strong> Anda telah menyelesaikan virtual lab rekayasa genetika pembuatan insulin [cite: 1].</p>
+            </div>
+            <button class="btn" onclick="playSound('click'); location.reload()">Ulangi Praktikum</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if(type === 'click') {
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+        } else if(type === 'pop') {
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } else if(type === 'success') {
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            setTimeout(() => {
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+                gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc2.start(); osc2.stop(audioCtx.currentTime + 0.15);
+            }, 100);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        }
+    }
+
+    let currentScreen = 1;
+    let selectedComponents = [];
+
+    function updateProgress(screen) {
+        let pct = (screen / 6) * 100;
+        document.getElementById('p-fill').style.width = pct + '%';
+    }
+
+    function goToScreen(screenNum) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-' + screenNum).classList.add('active');
+        currentScreen = screenNum;
+        updateProgress(screenNum);
+    }
+
+    function selectItem(el, name) {
+        let fb = document.getElementById('s2-feedback');
+        if(name === 'amilase') {
+            fb.className = 'feedback error';
+            fb.innerHTML = '<strong>Perhatian:</strong> Amilase adalah enzim pencernaan, bukan komponen rekayasa genetika!';
+            return;
+        }
+        if(!selectedComponents.includes(name)) {
+            if(selectedComponents.length < 4) {
+                selectedComponents.push(name);
+                el.classList.add('selected');
+                fb.className = 'feedback success';
+                fb.innerHTML = 'Komponen berhasil dipasang ke meja kerja!';
+                updateSlots();
+            }
+        }
+        if(selectedComponents.length === 4) {
+            document.getElementById('btn-s2').disabled = false;
+            fb.innerHTML = 'Semua 4 komponen utama lengkap! Silakan lanjut.';
+        }
+    }
+
+    function updateSlots() {
+        let slots = document.querySelectorAll('.slot');
+        document.getElementById('slot-count').innerText = selectedComponents.length;
+        selectedComponents.forEach((item, idx) => {
+            slots[idx].innerText = document.querySelectorAll('.item-card')[getItemIdx(item)].innerText;
+            slots[idx].classList.add('filled');
+        });
+    }
+
+    function getItemIdx(name) {
+        const map = { 'insulin': 0, 'plasmid': 1, 'enzim': 2, 'ligase': 3, 'bakteri': 5 };
+        return map[name];
+    }
+
+    function testEnzyme(type) {
+        playSound('click');
+        let fb = document.getElementById('s3-feedback');
+        let act = document.getElementById('s3-action');
+        if(type === 'EcoRI') {
+            fb.className = 'feedback success';
+            fb.innerHTML = 'Enzim EcoRI mengenali situs pemotongan yang sama. Ujung lengket terbentuk sempurna!';
+            act.style.display = 'block';
+        } else {
+            fb.className = 'feedback error';
+            fb.innerHTML = 'Penggunaan enzim berbeda membuat ujung DNA tidak kompatibel!';
+            act.style.display = 'none';
+        }
+    }
+
+    function runTransformation() {
+        document.getElementById('s4-result').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
