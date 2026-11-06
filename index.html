@@ -213,7 +213,78 @@
             margin-top: 8px;
             resize: vertical;
         }
-    </style>
+  
+/* TAMPILAN MEJA LABORATORIUM */
+.virtual-lab {
+  padding: 25px;
+  margin: 25px auto;
+  background: #f0f5f4;
+  border-radius: 16px;
+  color: #243b36;
+  font-family: Arial, sans-serif;
+}
+
+.virtual-lab h2 {
+  text-align: center;
+}
+
+.lab-layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.lab-equipment,
+.lab-workbench {
+  padding: 18px;
+  background: white;
+  border-radius: 12px;
+}
+
+.lab-item {
+  padding: 13px;
+  margin: 10px 0;
+  background: #e2efeb;
+  border: 1px solid #b7d5ca;
+  border-radius: 9px;
+  cursor: grab;
+  text-align: center;
+  user-select: none;
+}
+
+.lab-item:active {
+  cursor: grabbing;
+}
+
+#dropZone {
+  min-height: 230px;
+  padding: 15px;
+  border: 2px dashed #7ba99a;
+  border-radius: 12px;
+  background: #f7fbf9;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 10px;
+}
+
+#dropZone .lab-item {
+  width: 130px;
+  cursor: pointer;
+}
+
+#labMessage {
+  margin-top: 15px;
+  color: #28745c;
+}
+
+@media (max-width: 600px) {
+  .lab-layout {
+    grid-template-columns: 1fr;
+  }
+}
+  </style>
 </head>
 <body>
 
@@ -433,6 +504,105 @@
         document.getElementById('s4-result').style.display = 'block';
     }
 </script>
+
+<!-- MEJA LABORATORIUM VIRTUAL -->
+<section class="virtual-lab" id="virtualLab">
+  <h2>Meja Laboratorium Virtual</h2>
+  <p>Pilih alat dan bahan, kemudian pindahkan ke meja kerja.</p>
+
+  <div class="lab-layout">
+    <div class="lab-equipment">
+      <h3>Rak Alat dan Bahan</h3>
+
+      <div class="lab-item" draggable="true" data-name="Gen Insulin">
+        🧬 Gen Insulin
+      </div>
+
+      <div class="lab-item" draggable="true" data-name="Plasmid Vektor">
+        🔵 Plasmid Vektor
+      </div>
+
+      <div class="lab-item" draggable="true" data-name="Enzim Restriksi">
+        ✂️ Enzim Restriksi
+      </div>
+
+      <div class="lab-item" draggable="true" data-name="DNA Ligase">
+        🧪 DNA Ligase
+      </div>
+
+      <div class="lab-item" draggable="true" data-name="Biakan E. coli">
+        🦠 Biakan E. coli
+      </div>
+
+      <div class="lab-item" draggable="true" data-name="Cawan Petri">
+        🧫 Cawan Petri
+      </div>
+    </div>
+
+    <div class="lab-workbench">
+      <h3>Area Meja Kerja</h3>
+      <div id="dropZone">
+        <p>Letakkan alat dan bahan di sini</p>
+      </div>
+      <p id="labMessage">Belum ada objek yang dipilih.</p>
+    </div>
+  </div>
+</section>
+
+const labItems = document.querySelectorAll(
+  "#virtualLab .lab-item"
+);
+
+const dropZone = document.getElementById("dropZone");
+const labMessage = document.getElementById("labMessage");
+
+labItems.forEach(item => {
+
+  item.addEventListener("dragstart", event => {
+    event.dataTransfer.setData(
+      "text/plain",
+      item.dataset.name
+    );
+  });
+
+  item.addEventListener("click", () => {
+    addToWorkbench(item.dataset.name);
+  });
+
+});
+
+dropZone.addEventListener("dragover", event => {
+  event.preventDefault();
+});
+
+dropZone.addEventListener("drop", event => {
+  event.preventDefault();
+
+  const name = event.dataTransfer.getData("text/plain");
+
+  if (name) {
+    addToWorkbench(name);
+  }
+});
+
+function addToWorkbench(name) {
+  const existing = [...dropZone.querySelectorAll(".placed-item")];
+
+  if (existing.some(item => item.dataset.name === name)) {
+    labMessage.textContent = name + " sudah berada di meja kerja.";
+    return;
+  }
+
+  const object = document.createElement("div");
+  object.className = "lab-item placed-item";
+  object.dataset.name = name;
+  object.textContent = name;
+
+  dropZone.appendChild(object);
+
+  labMessage.textContent =
+    name + " berhasil ditempatkan di meja kerja.";
+}
 
 </body>
 </html>
